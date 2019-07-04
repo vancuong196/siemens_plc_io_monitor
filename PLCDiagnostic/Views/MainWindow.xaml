@@ -1,0 +1,67 @@
+﻿<Window x:Class="PLCDiagnostic.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PLCDiagnostic"
+        mc:Ignorable="d"
+        Closing="Window_Closing"
+        Title="PLC Diagnostic" Height="700" Width="800" ResizeMode="NoResize">
+    <Grid Width="Auto">
+
+        <TabControl HorizontalAlignment="Left" Height="659" VerticalAlignment="Top" Width="782" >
+            <TabItem Header="IO" Width="100">
+                <Grid  >
+                    <Grid.RowDefinitions >
+                        <RowDefinition Height="Auto"></RowDefinition>
+                        <RowDefinition Height="*"></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.RowDefinitions >
+                            <RowDefinition Height="Auto"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions >
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <Button Content="Add" Width="70" Height="25" HorizontalAlignment="Left" Margin="0,0,0,5" VerticalAlignment="Bottom" Name="AddIOButton" Click="AddIOButton_Click"></Button>
+                        <Button Grid.Column="1" Content="Save" Width="70" Height="25" HorizontalAlignment="Left" Margin="5,0,0,5" VerticalAlignment="Bottom" Name="SaveIOButton" Click="SaveIOButton_Click"></Button>
+                        <Button Grid.Column="2" Content="Delete" Width="70" Height="25" HorizontalAlignment="Left" Margin="5,0,0,5" VerticalAlignment="Bottom" Name="DeletedIOButton" Click="DeletedIOButton_Click"></Button>
+                        <Button Grid.Column="3" Content="Start" Width="70" Height="25" HorizontalAlignment="Left" Margin="5,0,0,5" VerticalAlignment="Bottom" Name="StartIOButton" Click="ButtonStart_Click"></Button>
+
+                    </Grid>
+                    <Grid Grid.Row="1">
+
+                        <DataGrid Grid.ColumnSpan="2" Name = "dataGrid" AlternatingRowBackground = "LightBlue"  
+         AlternationCount = "2" AutoGenerateColumns = "False" CanUserAddRows="False" >
+
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Width="*"  Header = "IO Name" Binding = "{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <DataGridTextColumn Width="*"  Header = "Value Type" Binding = "{Binding TypeName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                                <DataGridTextColumn Width="*"  Header = "Controller Address" Binding = "{Binding Controller, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                                <DataGridTextColumn Width="*"  Header = "CPU Type" Binding = "{Binding CPUType.DisplayName, Mode=OneWay, UpdateSourceTrigger=LostFocus}" />
+                                <DataGridTextColumn Width="*" Header = "IO Address" Binding = "{Binding Address, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <DataGridTextColumn Width="*" Header = "Current Value" Binding = "{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <DataGridCheckBoxColumn Header = "Select" Binding = "{Binding IsEnable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <!-- <DataGridCheckBoxColumn Header = "Monitor" Binding = "{Binding IsEnable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>-->
+                            </DataGrid.Columns>
+
+                        </DataGrid>
+                    </Grid>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Event" Width="100">
+                <Grid  HorizontalAlignment="Right" Width="776">
+                    <FlowDocumentScrollViewer Margin="10,10,10,0">
+                        <FlowDocument Name="LogViewer">
+
+                        </FlowDocument>
+                    </FlowDocumentScrollViewer>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+    </Grid>
+</Window>
