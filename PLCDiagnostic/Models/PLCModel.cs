@@ -19,7 +19,7 @@ namespace PLCDiagnostic.Models
         {
             get
             {
-                return Name + ":" + Address;
+                return "Name: "+Name + " - IP: " + Address;
             }
         }
     }

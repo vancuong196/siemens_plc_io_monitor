@@ -39,21 +39,11 @@ namespace PLCDiagnostic
         public ObservableCollection<PLCModel> ListPLC { set; get; }
         public MainWindow()
         {
+            SplashScreen splash = new SplashScreen("Assets/splash.png");
+            splash.Show(true);
+            Thread.Sleep(1000);
+            splash.Show(false);
             ListIO = new ObservableCollection<PlcIO>();
-            ListIO.Add(new PlcIO
-            {
-                Name = "Test 1",
-                Address = "DB14.DBD52",
-                Type = IOTypeConstants.FLOAT_TYPE,
-                Value = "N/A"
-            });
-            ListIO.Add(new PlcIO
-            {
-                Name = "Test 2",
-                Address = "DB34.DBX16.2",
-                Type = IOTypeConstants.BOOL_TYPE,
-                Value = "N/A"
-            });
             InitializeComponent();
             ApplicationService.Instance.EventAggregatorService.GetEvent<DataReadEvent>().Subscribe(handleDataFromEvent);
             ApplicationService.Instance.EventAggregatorService.GetEvent<ValueChangedEvent>().Subscribe(handleValueChangedEvent);
@@ -62,7 +52,7 @@ namespace PLCDiagnostic
             ListPLC = LoadSetupPLC();
             dataGridPLCConfig.ItemsSource = ListPLC;
             machineList = new List<PLCMachine>();
-            ShowNotification("All configurations are stored.", "Welcome", 4000);
+            ShowNotification("All configurations are restored.", "WELCOME", 5000);
 
         }
 
@@ -86,17 +76,10 @@ namespace PLCDiagnostic
         }
         public bool isStart = false;
         private async void ButtonStart_Click(object sender, RoutedEventArgs e)
-        {/*
-            if (String.IsNullOrEmpty(controllerAddressTb.Text))
-            {
-                MessageBox.Show("Please input controller address", "Error");
-                return;
-            }*/
-
-          //
+        {
           if (isStart)
             {
-                ShowNotification("Stopping all jobs!", "Info", 2000);
+                ShowNotification("Stopping all jobs.", "INFO", 20000);
                 StartIOButton.Content = "Start";
                 isStart = false;
                 foreach (var machine in machineList)
@@ -112,12 +95,12 @@ namespace PLCDiagnostic
                 machineList.Clear();
                 foreach (var io in ListIO)
                 {
-                    io.Value = "Stop";
+                    io.Value = "Not running";
                 }
-                ShowNotification("Stopped all jobs!", "Info", 2000);
+                ShowNotification("Stopped all jobs.", "INFO", 3000);
                 return;
             }
-            ShowNotification("Starting all jobs!", "Info", 2000);
+            ShowNotification("Starting all jobs.", "INFO", 20000);
             isStart = true;
             StartIOButton.Content = "Stop";
             foreach (var io in ListIO)
@@ -147,12 +130,12 @@ namespace PLCDiagnostic
                    {
                        foreach (var io in plc.ListIO)
                        {
-                           io.Value = "Time out";
-                           ShowNotification("Failed to start plc: " + plc.Address, "Error", 2000);
+                           io.Value = "Timeout";
+                           ShowNotification("Failed to start plc: " + plc.Address, "ERROR", 2000);
                        }
                    } else
                    {
-                       ShowNotification("Success start plc: "+plc.Address, "Info", 2000);
+                       ShowNotification("Success start plc: "+plc.Address, "INFO", 2000);
                    }
                }).Start();
             }
@@ -204,7 +187,7 @@ namespace PLCDiagnostic
         private void SaveIOButton_Click(object sender, RoutedEventArgs e)
         {
             File.WriteAllText("config.json", JsonConvert.SerializeObject(ListIO));
-            ShowNotification("Saved IO configuration", "Info", 3000);
+            ShowNotification("Saved IOs configuration.", "INFO", 3000);
         }
         private ObservableCollection<PlcIO> LoadSetup()
         {
@@ -214,7 +197,7 @@ namespace PLCDiagnostic
                 var config = JsonConvert.DeserializeObject<ObservableCollection<PlcIO>>(text);
                 foreach (var io in config )
                 {
-                    io.Value = "Stop";
+                    io.Value = "Not running";
                 }
                 return config;
             } catch
@@ -256,7 +239,7 @@ namespace PLCDiagnostic
             listIO.RemoveAll(i => i.IsEnable == true);
             ListIO = new ObservableCollection<PlcIO>( listIO);
             dataGrid.ItemsSource = ListIO;
-            ShowNotification("Deleted selected IO!", "Info", 3000);
+            ShowNotification("Deleted selected IO.", "INFO", 3000);
 
         }
 
@@ -322,22 +305,22 @@ namespace PLCDiagnostic
         {
             if (string.IsNullOrEmpty(tb_Name.Text))
             {
-                ShowNotification("Please input name of IO", "Input Error");
+                ShowNotification("Please input name of IO", "ERROR");
                 return;
             }
             if (string.IsNullOrEmpty(tb_Address.Text))
             {
-                ShowNotification("Please input address of IO", "Input Error");
+                ShowNotification("Please input address of IO", "ERROR");
                 return;
             }
             if (cb_Type.SelectedItem == null)
             {
-                ShowNotification("Please input address of IO", "Input Error");
+                ShowNotification("Please input address of IO", "ERROR");
                 return;
             }
             if (cbCpuType.SelectedItem==null)
             {
-                ShowNotification("Please select a controller!", "Input Error");
+                ShowNotification("Please select a controller!", "ERROR");
                 return;
             }
             var selectController = cbCpuType.SelectedItem as PLCModel;
@@ -358,7 +341,7 @@ namespace PLCDiagnostic
             tb_Name.Text = "";
             tb_Address.Text = "";
             AddIOView.Visibility = Visibility.Collapsed;
-            ShowNotification("Added new IO!", "Info", 3000);
+            ShowNotification("Added new IO!", "INFO", 3000);
         }
         public PlcIO ToAddIO { set; get; }
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -387,8 +370,8 @@ namespace PLCDiagnostic
                         Type = plc.CpuType
                     };
             }
-            File.WriteAllText("configPLC.json", JsonConvert.SerializeObject(ListIO));
-            ShowNotification("Saved all configuration!", "Info", 3000);
+            File.WriteAllText("config.json", JsonConvert.SerializeObject(ListIO));
+            ShowNotification("Saved all configurations.", "INFO", 3000);
         }
 
         private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -431,6 +414,11 @@ namespace PLCDiagnostic
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
             viewDialog.Visibility = Visibility.Collapsed;
+        }
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
         }
     }
 }
