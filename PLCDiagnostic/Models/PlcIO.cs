@@ -13,13 +13,35 @@ namespace PLCDiagnostic.Models
     public class PlcIO : BindableBase
     {
         private string _value;
-        public string Name { set; get; }
-        public CpuTypeModel CPUType { set; get; } = new CpuTypeModel()
+        private string _addressController = "127.0.0.1";
+        private CpuTypeModel cpuTypeModel = new CpuTypeModel()
         {
             Type = CpuType.S71500
         };
+        public string Name { set; get; }
+        public CpuTypeModel CPUType {
+            set
+            {
+                SetProperty(ref cpuTypeModel, value);
+            }
+            get
+            {
+                return cpuTypeModel;
+            }
+        }
+        public int PlcId { set; get; }
         public string Address { set; get; }
-        public string Controller { set; get; } = "127.0.0.1";
+        public string Controller
+        {
+            set
+            {
+                SetProperty(ref _addressController, value);
+            }
+            get
+            {
+                return _addressController;
+            }
+        }
         public string Value {
             set
             {

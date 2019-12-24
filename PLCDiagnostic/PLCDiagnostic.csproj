@@ -89,12 +89,14 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Data\ControllerInfomationHolder.cs" />
     <Compile Include="Data\IODataInformationHolder.cs" />
     <Compile Include="Data\IOTypeConstants.cs" />
     <Compile Include="Event\DataReadEvent.cs" />
     <Compile Include="Event\ValueChangedEvent.cs" />
     <Compile Include="Models\PlcEventModel.cs" />
     <Compile Include="Models\PlcIO.cs" />
+    <Compile Include="Models\PLCModel.cs" />
     <Compile Include="Models\ValueChangedModel.cs" />
     <Compile Include="PLC\CpuType.cs" />
     <Compile Include="PLC\PLC.cs" />

@@ -32,16 +32,17 @@ namespace PLCDiagnostic.PLC
         }
         
         private Thread ReadIOThread;
-        public bool Start()
+        public async Task<bool> Start()
         {
-            if (PlcCpuType==null|| String.IsNullOrEmpty(Address))
+            if (String.IsNullOrEmpty(Address))
             {
                 throw new ArgumentNullException();
             }
             plc = new Plc(PlcCpuType, Address, 0, 0);
+           
             try
             {
-                plc.Open();
+                 await plc.OpenAsync();
             } catch
             {
                 return false;
@@ -90,12 +91,24 @@ namespace PLCDiagnostic.PLC
                                     string boolValue = "N/A";
                                     try
                                     {
-                                         boolValue = ((bool)plc.Read(io.Address)).ToString();
-
+                                        if (io.Address.StartsWith("M"))
+                                        {
+                                            var add = io.Address.Substring(1, io.Address.Length - 1);
+                                            var parts = add.Split('.');
+                                            var startByte = int.Parse(parts[0]);
+                                            var startBit = byte.Parse(parts[1]);
+                                            boolValue = ((bool) plc.Read(DataType.Memory, 0, startByte, VarType.Bit, 1, startBit)).ToString() ;
+                                           
+                                        } else
+                                        {
+                                            boolValue = ((bool)plc.Read(io.Address)).ToString();
+                                        }
                                     } catch
                                     {
-                                        boolValue = "ERR";
+                                        boolValue = "Parsing ERR";
                                     }
+                                   
+                                   
                                     Console.WriteLine(io.Address + " " + boolValue);
                                     if (string.IsNullOrEmpty(io.Value))
                                     {
@@ -121,13 +134,23 @@ namespace PLCDiagnostic.PLC
                                     string intValue = "N/A";
                                     try
                                     {
-                                        intValue = ((uint)plc.Read(io.Address)).ConvertToInt().ToString();
-
+                                        if (io.Address.StartsWith("MD"))
+                                        {
+                                            var add = io.Address.Substring(2, io.Address.Length - 2);
+                                            var startByte = int.Parse(add);
+                                            var x = plc.Read(DataType.Memory, 0, startByte, VarType.DInt, 1);
+                                            intValue = (plc.Read(DataType.Memory, 0, startByte, VarType.DInt, 1)).ToString();
+                                         
+                                        } else
+                                        {
+                                            intValue = ((uint)plc.Read(io.Address)).ConvertToInt().ToString();
+                                        }
                                     }
                                     catch
                                     {
-                                        intValue = "ERR";
+                                        intValue = "Parsing ERR";
                                     }
+                                 
                                    // var intValue = ((uint)plc.Read(io.Address)).ConvertToInt().ToString();
                                    // Console.WriteLine(io.Name + " " + intValue);
 
@@ -158,13 +181,22 @@ namespace PLCDiagnostic.PLC
                                     string loatValue = "N/A";
                                     try
                                     {
-                                        loatValue = ((uint)plc.Read(io.Address)).ConvertToFloat().ToString("0.000");
-
+                                        if (io.Address.StartsWith("M"))
+                                        {
+                                            var add = io.Address.Substring(2, io.Address.Length - 1);
+                                            var startByte = int.Parse(add);
+                                            loatValue = (plc.Read(DataType.Memory, 0, startByte, VarType.Real, 1)).ToString();
+                                           
+                                        } else
+                                        {
+                                            loatValue = ((uint)plc.Read(io.Address)).ConvertToFloat().ToString("0.000");
+                                        }
                                     }
                                     catch
                                     {
-                                        loatValue = "ERR";
+                                        loatValue = "Parsing ERR";
                                     }
+                                  
                                     if (string.IsNullOrEmpty(io.Value))
                                     {
                                         var model = new ValueChangedModel();
@@ -192,13 +224,22 @@ namespace PLCDiagnostic.PLC
                                     string byteValue = "N/A";
                                     try
                                     {
-                                        byteValue = ((byte)plc.Read(io.Address)).ToString();
-
+                                        if (io.Address.StartsWith("MB"))
+                                        {
+                                            var add = io.Address.Substring(2, io.Address.Length - 2);
+                                            var startByte = int.Parse(add);
+                                            byteValue = ((byte)plc.Read(DataType.Memory, 0, startByte, VarType.Byte, 1)).ToString();
+                                      
+                                        } else
+                                        {
+                                            byteValue = ((byte)plc.Read(io.Address)).ToString();
+                                        }
                                     }
                                     catch
                                     {
-                                        byteValue = "ERR";
+                                        byteValue = "Parsing ERR";
                                     }
+                                 
                                     if (string.IsNullOrEmpty(io.Value))
                                     {
                                         var model = new ValueChangedModel();
@@ -223,7 +264,7 @@ namespace PLCDiagnostic.PLC
                             }
                         }
                     }
-                    Thread.Sleep(10);
+                    Thread.Sleep(150);
                 }
             } catch
             {

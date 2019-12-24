@@ -6,11 +6,16 @@
         xmlns:local="clr-namespace:PLCDiagnostic"
         mc:Ignorable="d"
         Closing="Window_Closing"
+       
         Title="PLC Diagnostic" Height="700" Width="800" ResizeMode="NoResize">
     <Grid Width="Auto">
-
-        <TabControl HorizontalAlignment="Left" Height="659" VerticalAlignment="Top" Width="782" >
-            <TabItem Header="IO" Width="100">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+       
+        <TabControl Name="tabView" SelectionChanged="TabControl_SelectionChanged" Grid.Row="0" HorizontalAlignment="Left" Height="659" VerticalAlignment="Top" Width="782" >
+            <TabItem Name="ioTab" Header="IO" Width="100">
                 <Grid  >
                     <Grid.RowDefinitions >
                         <RowDefinition Height="Auto"></RowDefinition>
@@ -34,14 +39,14 @@
                     </Grid>
                     <Grid Grid.Row="1">
 
-                        <DataGrid Grid.ColumnSpan="2" Name = "dataGrid" AlternatingRowBackground = "LightBlue"  
+                        <DataGrid Name = "dataGrid" AlternatingRowBackground = "LightBlue"  
          AlternationCount = "2" AutoGenerateColumns = "False" CanUserAddRows="False" >
 
                             <DataGrid.Columns>
                                 <DataGridTextColumn Width="*"  Header = "IO Name" Binding = "{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <DataGridTextColumn Width="*"  Header = "Value Type" Binding = "{Binding TypeName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
-                                <DataGridTextColumn Width="*"  Header = "Controller Address" Binding = "{Binding Controller, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
-                                <DataGridTextColumn Width="*"  Header = "CPU Type" Binding = "{Binding CPUType.DisplayName, Mode=OneWay, UpdateSourceTrigger=LostFocus}" />
+                                <DataGridTextColumn Width="*" IsReadOnly="True"  Header = "Controller Address" Binding = "{Binding Controller, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <DataGridTextColumn Width="*" IsReadOnly="True" Header = "CPU Type" Binding = "{Binding CPUType.DisplayName, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <DataGridTextColumn Width="*" Header = "IO Address" Binding = "{Binding Address, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <DataGridTextColumn Width="*" Header = "Current Value" Binding = "{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <DataGridCheckBoxColumn Header = "Select" Binding = "{Binding IsEnable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
@@ -52,7 +57,7 @@
                     </Grid>
                 </Grid>
             </TabItem>
-            <TabItem Header="Event" Width="100">
+            <TabItem Visibility="Collapsed" Header="Event" Width="100">
                 <Grid  HorizontalAlignment="Right" Width="776">
                     <FlowDocumentScrollViewer Margin="10,10,10,0">
                         <FlowDocument Name="LogViewer">
@@ -61,7 +66,71 @@
                     </FlowDocumentScrollViewer>
                 </Grid>
             </TabItem>
-        </TabControl>
+          
+            <TabItem Header="PLC Config" Width="100">
+              
+                <Grid  >
+                    <Grid.RowDefinitions >
+                        <RowDefinition Height="Auto"></RowDefinition>
+                        <RowDefinition Height="*"></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.RowDefinitions >
+                            <RowDefinition Height="Auto"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions >
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="1" Content="Save" Width="70" Height="25" HorizontalAlignment="Left" Margin="5,0,0,5" VerticalAlignment="Bottom" Click="Button_Click_2"></Button>
+                    </Grid>
+                    <Grid Grid.Row="1">
 
+                        <DataGrid Name = "dataGridPLCConfig" AlternatingRowBackground = "LightBlue"  
+         AlternationCount = "2" AutoGenerateColumns = "False" CanUserAddRows="False" >
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Width="*"  Header = "Name" Binding = "{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <DataGridTextColumn Width="*" IsReadOnly="True"  Header = "PLC Type" Binding = "{Binding Type, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                                <DataGridTextColumn Width="*"  Header = "Controller Address" Binding = "{Binding Address, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        
+        <Border Grid.Row="1" Background="LightCyan" BorderThickness="1" BorderBrush="Black"></Border>
+        <Grid Margin="20"   Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="1" Name="AddIOView" >
+            <Grid.ColumnDefinitions>
+            </Grid.ColumnDefinitions>
+            <Button Content="Cancel" HorizontalAlignment="Left" Height="32" Margin="252,230,0,0" VerticalAlignment="Top" Width="99" RenderTransformOrigin="0.669,0.413" Click="Button_Click_1"/>
+            <Button Content="OK" HorizontalAlignment="Left" Height="32" Margin="115,230,0,0" VerticalAlignment="Top" Width="100" RenderTransformOrigin="0.711,0.571" Click="Button_Click"/>
+            <Label Content="Name" HorizontalAlignment="Left" Height="27" Margin="75,37,0,0" VerticalAlignment="Top" Width="91"/>
+            <Label Content="Address" HorizontalAlignment="Left" Height="27" Margin="75,69,0,0" VerticalAlignment="Top" Width="91"/>
+            <TextBox HorizontalAlignment="Left" VerticalContentAlignment="Center"  Name="tb_Name" Height="27" Margin="190,38,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="220"/>
+            <TextBox HorizontalAlignment="Left"  VerticalContentAlignment="Center" Name="tb_Address" Height="27" Margin="190,70,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="220"/>
+            <ComboBox DisplayMemberPath="Name" HorizontalAlignment="Left" Name="cb_Type" Height="26" Margin="190,102,0,0" VerticalAlignment="Top" Width="220" RenderTransformOrigin="0.509,-0.944"/>
+            <Label Content="Type" HorizontalAlignment="Left" Height="27" Margin="75,101,0,0" VerticalAlignment="Top" Width="91"/>
+            <Label Content="Controller" HorizontalAlignment="Left" Height="27" Margin="75,133,0,0" VerticalAlignment="Top" Width="128"/>
+            <TextBox Visibility="Collapsed" HorizontalAlignment="Left" x:Name="controllerAddressTb" Height="27" Margin="190,167,0,0" TextWrapping="Wrap" Text="{Binding ControllerAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top" Width="220"/>
+            <ComboBox DisplayMemberPath="DisplayName" Name="cbCpuType" HorizontalAlignment="Left" Height="26" Margin="190,134,0,0" VerticalAlignment="Top" Width="220" RenderTransformOrigin="0.509,-0.944"/>
+            <Label Visibility="Collapsed" Content="Cpu Type" HorizontalAlignment="Left" Height="27" Margin="75,167,0,0" VerticalAlignment="Top" Width="128"/>
+        </Grid>
+        <Grid Name="viewDialog" Grid.Row="0" Visibility="Collapsed" Grid.RowSpan="2" Height="70" Width="200" Margin="0,0,10,10" Background="DarkCyan" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Button Grid.Row="0" Click="Button_Click_3" Grid.Column="1" Background="Transparent" Foreground="White" Margin="0,2,5,2" ><Bold>X</Bold></Button>
+            <TextBlock Grid.Row="0" Name="tvDialogTile" Grid.Column="0" Foreground="White" Margin="5,2,5,2" ></TextBlock>
+            <TextBlock Grid.Row="1" Name="tvDialogContent" Grid.Column="0" Foreground="White" Margin="5,5,5,5"></TextBlock>
+            
+        </Grid>
     </Grid>
 </Window>
