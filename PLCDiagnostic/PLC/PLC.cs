@@ -30,7 +30,45 @@ namespace PLCDiagnostic.PLC
         {
             set; get;
         }
-        
+        public bool WriteIOToPLC(PlcIO io)
+        {
+            try
+            {
+                object valueToWrite = null;
+                switch (io.Type)
+                {
+                    case IOTypeConstants.BOOL_TYPE:
+                        if (io.WriteValue == "True")
+                        {
+                            valueToWrite = true;
+                        }
+                        else
+                        {
+                            valueToWrite = false;
+                        }
+                        break;
+                    case IOTypeConstants.BYTE_TYPE:
+                        valueToWrite = byte.Parse(io.WriteValue);
+                        break;
+                    case IOTypeConstants.INT_TYPE:
+                        valueToWrite = int.Parse(io.WriteValue);
+                        break;
+                    case IOTypeConstants.FLOAT_TYPE:
+                        valueToWrite = float.Parse(io.WriteValue);
+
+                        break;
+                    case IOTypeConstants.WORD_TYPE:
+                        valueToWrite = short.Parse(io.WriteValue);
+
+                        break;
+                }
+                plc.Write(io.Address, valueToWrite);
+                return true;
+            } catch
+            {
+                return false;
+            }
+        }
         private Thread ReadIOThread;
         public async Task<bool> Start()
         {
@@ -80,13 +118,56 @@ namespace PLCDiagnostic.PLC
                 while (true)
                 {
 
-                    lock (ListIO)
-                    {
+                   // lock (ListIO)
+                   // {
 
                         foreach (var io in ListIO)
                         {
+                           
                             switch (io.Type)
                             {
+                                case IOTypeConstants.WORD_TYPE:
+                                    string wordValue = "N/A";
+                                    try
+                                    {
+                                        if (io.Address.StartsWith("QW"))
+                                        {
+                                            var add = io.Address.Substring(2);
+                                            var startByte = int.Parse(add);
+                                            wordValue = (plc.Read(DataType.Output, 0, startByte, VarType.Word, 1)).ToString();
+
+                                        }
+                                        else
+                                        {
+                                            wordValue = ((bool)plc.Read(io.Address)).ToString();
+                                        }
+                                    }
+                                    catch
+                                    {
+                                        wordValue = "Parsing ERR";
+                                    }
+
+                                    Console.WriteLine(io.Address + " " + wordValue);
+                                    if (string.IsNullOrEmpty(io.Value))
+                                    {
+                                        var model = new ValueChangedModel();
+                                        model.Address = io.Address;
+                                        model.Name = io.Name;
+                                        model.NewValue = wordValue;
+                                        model.OldValue = "N/A";
+                                        ApplicationService.Instance.EventAggregatorService.GetEvent<ValueChangedEvent>().Publish(model);
+                                    }
+                                    else if (!wordValue.Equals(io.Value))
+                                    {
+                                        var model = new ValueChangedModel();
+                                        model.Address = io.Address;
+                                        model.Name = io.Name;
+                                        model.NewValue = wordValue;
+                                        model.OldValue = io.Value;
+                                        ApplicationService.Instance.EventAggregatorService.GetEvent<ValueChangedEvent>().Publish(model);
+                                    }
+                                    io.Value = wordValue;
+                                    break;
                                 case IOTypeConstants.BOOL_TYPE:
                                     string boolValue = "N/A";
                                     try
@@ -143,7 +224,7 @@ namespace PLCDiagnostic.PLC
                                          
                                         } else
                                         {
-                                            intValue = ((uint)plc.Read(io.Address)).ConvertToInt().ToString();
+                                            intValue = ((uint) plc.Read(io.Address)).ConvertToInt().ToString();
                                         }
                                     }
                                     catch
@@ -176,8 +257,6 @@ namespace PLCDiagnostic.PLC
                                     Console.WriteLine(io.Address + " " + intValue);
                                     break;
                                 case IOTypeConstants.FLOAT_TYPE:
-                                  //  var loatValue = ((uint)plc.Read(io.Address)).ConvertToFloat().ToString("0.000");
-                                   // Console.WriteLine(io.Name + " " + loatValue);
                                     string loatValue = "N/A";
                                     try
                                     {
@@ -189,7 +268,7 @@ namespace PLCDiagnostic.PLC
                                            
                                         } else
                                         {
-                                            loatValue = ((uint)plc.Read(io.Address)).ConvertToFloat().ToString("0.000");
+                                        loatValue = ((uint)plc.Read(io.Address)).ConvertToFloat().ToString();
                                         }
                                     }
                                     catch
@@ -263,10 +342,13 @@ namespace PLCDiagnostic.PLC
                                     break;
                             }
                         }
-                    }
-                    Thread.Sleep(150);
+                   // }
+                    Thread.Sleep(20);
                 }
-            } catch
+            } catch (ThreadAbortException e)
+            {
+
+            } catch (Exception e)
             {
 
             }

@@ -12,5 +12,6 @@ namespace PLCDiagnostic.Data
         public const  int BOOL_TYPE =1;
         public const  int FLOAT_TYPE =2;
         public const  int BYTE_TYPE =3;
+        public const int WORD_TYPE = 4;
     }
 }

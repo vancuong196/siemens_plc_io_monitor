@@ -16,16 +16,8 @@
             <RowDefinition Height="*"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
         </Grid.RowDefinitions>
-        <Menu Height="24" Visibility="Collapsed" VerticalAlignment="Center">
-            <MenuItem Header="_File" Click="MenuItem_Click">
-              
-            </MenuItem>
-            <MenuItem Header="_Help">
-            </MenuItem>
-            <MenuItem Header="_Exit">
-            </MenuItem>
-        </Menu>
-        <TabControl Background="AliceBlue" Name="tabView" SelectionChanged="TabControl_SelectionChanged" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Stretch"  Margin="5" >
+       
+        <TabControl Background="AliceBlue" Name="tabView" SelectionChanged="MainTabControl_SelectionChanged" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Stretch"  Margin="5" >
             <TabControl.Resources>
                 <Style TargetType="TabItem">
                     <Setter Property="Template">
@@ -67,42 +59,138 @@
                             <ColumnDefinition Width="Auto"></ColumnDefinition>
                             <ColumnDefinition Width="Auto"></ColumnDefinition>
                         </Grid.ColumnDefinitions>
-                        <Button Background="AliceBlue"  Content="Add" Width="70" Height="25" HorizontalAlignment="Left" Margin="0,5,0,5" VerticalAlignment="Bottom" Name="AddIOButton" Click="AddIOButton_Click"></Button>
-                        <Button Background="AliceBlue" Grid.Column="1" Content="Save" Width="70" Height="25" HorizontalAlignment="Left" Margin="5,0,0,5" VerticalAlignment="Bottom" Name="SaveIOButton" Click="SaveIOButton_Click"></Button>
-                        <Button Background="AliceBlue" Grid.Column="2" Content="Delete" Width="70" Height="25" HorizontalAlignment="Left" Margin="5,0,0,5" VerticalAlignment="Bottom" Name="DeletedIOButton" Click="DeletedIOButton_Click"></Button>
-                        <Button Background="AliceBlue" Grid.Column="3" Content="Start" Width="70" Height="25" HorizontalAlignment="Left" Margin="5,0,0,5" VerticalAlignment="Bottom" Name="StartIOButton" Click="ButtonStart_Click"></Button>
+                        <Button Background="AliceBlue"  Content="Add" Width="70" Height="25" HorizontalAlignment="Left" Margin="0,5,0,5" VerticalAlignment="Bottom" Name="btnShowAddIODialog" Click="BtnShowAddIODiaglog_Click"></Button>
+                        <Button Background="AliceBlue" Grid.Column="1" Content="Save" Width="70" Height="25" HorizontalAlignment="Left" Margin="5,0,0,5" VerticalAlignment="Bottom" Name="btnSaveIOConfig" Click="BtnSaveIOConfig_Click"></Button>
+                        <Button Background="AliceBlue" Grid.Column="2" Content="Delete" Width="70" Height="25" HorizontalAlignment="Left" Margin="5,0,0,5" VerticalAlignment="Bottom" Name="btnDeleteSelectedIO" Click="BtnDeleteButtonClicked"></Button>
+                        <Button Background="AliceBlue" Grid.Column="3" Content="Start" Width="70" Height="25" HorizontalAlignment="Left" Margin="5,0,0,5" VerticalAlignment="Bottom" Name="btnStartPLCWatcher" Click="btnStartStopWatcher_Click"></Button>
 
                     </Grid>
                     <Grid Grid.Row="1">
 
-                        <DataGrid Background="AliceBlue" Name = "dataGrid" AlternatingRowBackground = "LightBlue"  
+                        <DataGrid Background="AliceBlue" HorizontalAlignment="Stretch" RowHeight="25" VerticalContentAlignment="Center" HorizontalContentAlignment="Stretch"  Name = "datagridIOs" AlternatingRowBackground = "LightBlue"  
          AlternationCount = "2" AutoGenerateColumns = "False" CanUserAddRows="False" >
 
                             <DataGrid.Columns>
-                                <DataGridTextColumn Width="*"  Header = "IO Name" Binding = "{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn Width="*"  Header = "Value Type" Binding = "{Binding TypeName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
-                                <DataGridTextColumn Width="*" IsReadOnly="True"  Header = "Controller Address" Binding = "{Binding Controller, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn Width="*" IsReadOnly="True" Header = "CPU Type" Binding = "{Binding CPUType.DisplayName, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn Width="*" Header = "IO Address" Binding = "{Binding Address, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn Width="*" Header = "Current Value" Binding = "{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridCheckBoxColumn Header = "Select" Binding = "{Binding IsEnable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                <!-- <DataGridCheckBoxColumn Header = "Monitor" Binding = "{Binding IsEnable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>-->
+
+                                <DataGridTemplateColumn Width="*">
+                                    <DataGridTemplateColumn.Header>
+                                        <TextBlock Text="Name"></TextBlock>
+                                    </DataGridTemplateColumn.Header>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <TextBox HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Text= "{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                                </TextBox>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn>
+                                    <DataGridTemplateColumn.Header>
+                                        <TextBlock Text="Value Type"></TextBlock>
+                                    </DataGridTemplateColumn.Header>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <TextBox HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Text= "{Binding TypeName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" ></TextBox>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn >
+                                    <DataGridTemplateColumn.Header>
+                                        <TextBlock Text="Controller Address"></TextBlock>
+                                    </DataGridTemplateColumn.Header>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <TextBox HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsReadOnly="True" Text= "{Binding Controller, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" ></TextBox>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn>
+                                    <DataGridTemplateColumn.Header>
+                                        <TextBlock Text="CPU Type"></TextBlock>
+                                    </DataGridTemplateColumn.Header>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <TextBox HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsReadOnly="True" Text= "{Binding CPUType.DisplayName, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" ></TextBox>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn>
+                                    <DataGridTemplateColumn.Header>
+                                        <TextBlock Text="IO Address"></TextBlock>
+                                    </DataGridTemplateColumn.Header>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <TextBox HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Text="{Binding Address, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></TextBox>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn>
+                                    <DataGridTemplateColumn.Header>
+                                        <TextBlock Text="Write Address"></TextBlock>
+                                    </DataGridTemplateColumn.Header>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <TextBox HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Text="{Binding WriteAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></TextBox>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn>
+                                    <DataGridTemplateColumn.Header>
+                                        <TextBlock Text="Write Value"></TextBlock>
+                                    </DataGridTemplateColumn.Header>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <TextBox HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Text="{Binding WriteValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></TextBox>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn>
+                                    <DataGridTemplateColumn.Header>
+                                        <TextBlock Text="Current Value"></TextBlock>
+                                    </DataGridTemplateColumn.Header>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"> <Bold><Run Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></Run></Bold></TextBlock>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Width="*">
+                                    <DataGridTemplateColumn.Header>
+                                        <TextBlock>Change</TextBlock>
+                                    </DataGridTemplateColumn.Header>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Button Width="70" Click="BtnWriteIOValue_Click" HorizontalAlignment="Center" VerticalAlignment="Center" Content="Write"></Button>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
                             </DataGrid.Columns>
 
                         </DataGrid>
                     </Grid>
                 </Grid>
             </TabItem>
-            <TabItem Background="AliceBlue" Visibility="Collapsed" Header="Event" Width="100">
-                <Grid  HorizontalAlignment="Right" Width="776">
-                    <FlowDocumentScrollViewer Margin="10,10,10,0">
-                        <FlowDocument Name="LogViewer">
-
-                        </FlowDocument>
-                    </FlowDocumentScrollViewer>
-                </Grid>
-            </TabItem>
-
             <TabItem Background="AliceBlue" Header="PLC Configs" Width="100">
 
                 <Grid  >
@@ -121,7 +209,7 @@
                             <ColumnDefinition Width="Auto"></ColumnDefinition>
                             <ColumnDefinition Width="Auto"></ColumnDefinition>
                         </Grid.ColumnDefinitions>
-                        <Button Background="AliceBlue" Grid.Column="1" Content="Save" Width="70" Height="25" HorizontalAlignment="Left" Margin="0,5,0,5" VerticalAlignment="Bottom" Click="Button_Click_2" Grid.ColumnSpan="2"></Button>
+                        <Button Background="AliceBlue" Grid.Column="1" Content="Save" Width="70" Height="25" HorizontalAlignment="Left" Margin="0,5,0,5" VerticalAlignment="Bottom" Click="BtnSavePLCConfig_Click" Grid.ColumnSpan="2"></Button>
                     </Grid>
                     <Grid Grid.Row="1">
 
@@ -137,7 +225,7 @@
                 </Grid>
             </TabItem>
         </TabControl>
-        <Grid Visibility="Collapsed" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Row="1" Grid.RowSpan="2" Name="AddIOView" >
+        <Grid Visibility="Collapsed" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Row="1" Grid.RowSpan="2" Name="dialogViewAddIO" >
             <Grid.Background>
                 <SolidColorBrush Color="Black" Opacity="0.65"/>
             </Grid.Background>
@@ -145,21 +233,21 @@
                 <Grid.ColumnDefinitions>
                 </Grid.ColumnDefinitions>
                 <TextBlock VerticalAlignment="Top"  Margin="10" HorizontalAlignment="Center"><Bold>Add New IO</Bold></TextBlock>
-                <Button Content="Cancel" HorizontalAlignment="Left" Height="32" Margin="208,189,75,10" VerticalAlignment="Top" Width="99" RenderTransformOrigin="0.669,0.413" Click="Button_Click_1"/>
+                <Button Content="Cancel" HorizontalAlignment="Left" Height="32" Margin="208,189,75,10" VerticalAlignment="Top" Width="99" RenderTransformOrigin="0.669,0.413" Click="btnCancelAddIO_Click"/>
                 <Button Content="OK" HorizontalAlignment="Left" Height="32" Margin="75,189,0,0" VerticalAlignment="Top" Width="100" RenderTransformOrigin="0.711,0.571" Click="Button_Click"/>
                 <Label Content="Name" HorizontalAlignment="Left" Height="27" Margin="30,37,0,0" VerticalAlignment="Top" Width="91"/>
                 <Label Content="Address" HorizontalAlignment="Left" Height="27" Margin="30,69,0,0" VerticalAlignment="Top" Width="91"/>
                 <TextBox HorizontalAlignment="Left" VerticalContentAlignment="Center"  Name="tb_Name" Height="27" Margin="120,38,30,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="220"/>
                 <TextBox HorizontalAlignment="Left"  VerticalContentAlignment="Center" Name="tb_Address" Height="27" Margin="120,70,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="220"/>
-                <ComboBox DisplayMemberPath="Name" HorizontalAlignment="Left" Name="cb_Type" Height="26" Margin="120,102,0,0" VerticalAlignment="Top" Width="220" RenderTransformOrigin="0.509,-0.944"/>
+                <ComboBox DisplayMemberPath="Name" HorizontalAlignment="Left" Name="comboboxValueType" Height="26" Margin="120,102,0,0" VerticalAlignment="Top" Width="220" RenderTransformOrigin="0.509,-0.944"/>
                 <Label Content="Type" HorizontalAlignment="Left" Height="27" Margin="30,101,0,0" VerticalAlignment="Top" Width="91"/>
                 <Label Content="Controller" HorizontalAlignment="Left" Height="27" Margin="30,133,0,0" VerticalAlignment="Top" Width="128"/>
                 <TextBox Visibility="Collapsed" HorizontalAlignment="Left" x:Name="controllerAddressTb" Height="27" Margin="190,167,0,0" TextWrapping="Wrap" Text="{Binding ControllerAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top" Width="220"/>
-                <ComboBox DisplayMemberPath="DisplayName" Name="cbCpuType" HorizontalAlignment="Left" Height="26" Margin="120,134,0,0" VerticalAlignment="Top" Width="220" RenderTransformOrigin="0.509,-0.944"/>
+                <ComboBox DisplayMemberPath="DisplayName" Name="comboboxCPUType" HorizontalAlignment="Left" Height="26" Margin="120,134,0,0" VerticalAlignment="Top" Width="220" RenderTransformOrigin="0.509,-0.944"/>
                 <Label Visibility="Collapsed" Content="Cpu Type" HorizontalAlignment="Left" Height="27" Margin="75,167,0,0" VerticalAlignment="Top" Width="128"/>
             </Grid>
         </Grid>
-        <Grid Name="viewDialog" Grid.Row="1" Visibility="Visible" Grid.RowSpan="2" Height="70" Width="200" Margin="10" Background="DarkCyan" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+        <Grid Name="viewNotification" Grid.Row="1" Visibility="Visible" Grid.RowSpan="2" Height="70" Width="200" Margin="10" Background="DarkCyan" HorizontalAlignment="Right" VerticalAlignment="Bottom">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"></ColumnDefinition>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
@@ -168,7 +256,7 @@
                 <RowDefinition Height="Auto"></RowDefinition>
                 <RowDefinition Height="*"></RowDefinition>
             </Grid.RowDefinitions>
-            <Button Grid.Row="0" Width="20" BorderBrush="Transparent" Click="Button_Click_3" Grid.Column="1" Background="Transparent" Foreground="White" Margin="0,2,5,2" >
+            <Button Grid.Row="0" Width="20" BorderBrush="Transparent" Name="btnDismissNotification" Click="BtnDismissNotificationClicked" Grid.Column="1" Background="Transparent" Foreground="White" Margin="0,2,5,2" >
                 <Bold>X</Bold>
             </Button>
             <TextBlock Grid.Row="0" Grid.Column="0" Foreground="Black" Margin="10,5,5,2" ><Bold><Run Name="tvDialogTile"></Run></Bold></TextBlock>

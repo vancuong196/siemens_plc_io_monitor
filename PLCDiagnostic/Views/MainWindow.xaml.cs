@@ -4,7 +4,6 @@ using PLCDiagnostic.Event;
 using PLCDiagnostic.Models;
 using PLCDiagnostic.PLC;
 using PLCDiagnostic.Services;
-using PLCDiagnostic.Views;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -33,37 +32,57 @@ namespace PLCDiagnostic
     /// 
     public partial class MainWindow : Window
     {
-        private PLCMachine plc;
-        private List<PLCMachine> machineList;
-        public ObservableCollection<PlcIO> ListIO { set; get; }
+        private List<PLCMachine> _runningPLCList = new List<PLCMachine>();
+        private DispatcherTimer _showNotificationTimer = null;
+        private bool _isWatcherStarted = false;
+        public ObservableCollection<PlcIO> PLCIOList { set; get; }
         public ObservableCollection<PLCModel> ListPLC { set; get; }
+
         public MainWindow()
+        {
+
+            ShowSplashScreen(500);
+
+            InitializeComponent();
+
+            InitEvent();
+
+            LoadSavedConfig();
+
+        }
+
+        private void InitEvent()
+        {
+            ApplicationService.Instance.EventAggregatorService.GetEvent<DataReadEvent>().Subscribe(handleDataFromEvent);
+            ApplicationService.Instance.EventAggregatorService.GetEvent<ValueChangedEvent>().Subscribe(handleValueChangedEvent);
+        }
+
+        private void LoadSavedConfig()
+        {
+            PLCIOList = new ObservableCollection<PlcIO>();
+            PLCIOList = LoadIOsConfigFromFile();
+            datagridIOs.ItemsSource = PLCIOList;
+            ListPLC = LoadPLCConfigFromFile();
+            dataGridPLCConfig.ItemsSource = ListPLC;
+            ShowNotification("All configurations are restored.", "WELCOME", 5000);
+        }
+
+        private void ShowSplashScreen(int time)
         {
             SplashScreen splash = new SplashScreen("Assets/splash.png");
             splash.Show(true);
-            Thread.Sleep(1000);
+            Thread.Sleep(time);
             splash.Show(false);
-            ListIO = new ObservableCollection<PlcIO>();
-            InitializeComponent();
-            ApplicationService.Instance.EventAggregatorService.GetEvent<DataReadEvent>().Subscribe(handleDataFromEvent);
-            ApplicationService.Instance.EventAggregatorService.GetEvent<ValueChangedEvent>().Subscribe(handleValueChangedEvent);
-            ListIO = LoadSetup();
-            dataGrid.ItemsSource = ListIO;
-            ListPLC = LoadSetupPLC();
-            dataGridPLCConfig.ItemsSource = ListPLC;
-            machineList = new List<PLCMachine>();
-            ShowNotification("All configurations are restored.", "WELCOME", 5000);
-
         }
-
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            onClosed();
+            StopThreadBeforeClosing();
         }
-        public void onClosed()
+
+        public void StopThreadBeforeClosing()
         {
-            foreach (var machine in machineList)
+            foreach (var machine in _runningPLCList)
             {
                 try
                 {
@@ -74,154 +93,168 @@ namespace PLCDiagnostic
                 }
             }
         }
-        public bool isStart = false;
-        private async void ButtonStart_Click(object sender, RoutedEventArgs e)
-        {
-          if (isStart)
-            {
-                ShowNotification("Stopping all jobs.", "INFO", 20000);
-                StartIOButton.Content = "Start";
-                isStart = false;
-                foreach (var machine in machineList)
-                {
-                    try
-                    {
-                        machine.Stop();
-                    }catch
-                    {
 
-                    }
-                }
-                machineList.Clear();
-                foreach (var io in ListIO)
-                {
-                    io.Value = "Not running";
-                }
-                ShowNotification("Stopped all jobs.", "INFO", 3000);
-                return;
+
+        private void btnStartStopWatcher_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isWatcherStarted)
+            {
+                StopPLCWatcher();
             }
+            else
+            {
+                StartPLCWatcher();
+            }
+        }
+
+        private void StartPLCWatcher()
+        {
             ShowNotification("Starting all jobs.", "INFO", 20000);
-            isStart = true;
-            StartIOButton.Content = "Stop";
-            foreach (var io in ListIO)
+            _isWatcherStarted = true;
+            btnStartPLCWatcher.Content = "Stop";
+            this.btnDeleteSelectedIO.IsEnabled = false;
+            this.btnShowAddIODialog.IsEnabled = false;
+            this.btnSaveIOConfig.IsEnabled = false;
+            foreach (var io in PLCIOList)
             {
                 io.Value = "Connecting...";
             }
-            for (int i =0; i<ListIO.Count;i++) 
+            for (int i = 0; i < PLCIOList.Count; i++)
             {
-                var io = ListIO.ElementAt(i);
-                var plc = machineList.Where(machine => machine.Address == io.Address).FirstOrDefault();
-                if (plc==null)
+                var io = PLCIOList.ElementAt(i);
+                var plc = _runningPLCList.Where(machine => machine.Address == io.Controller).FirstOrDefault();
+                if (plc == null)
                 {
                     plc = new PLCMachine(io.Controller, io.CPUType.Type);
                     plc.ListIO.Add(io);
-                    machineList.Add(plc);
-                } else
+                    _runningPLCList.Add(plc);
+                }
+                else
                 {
                     plc.ListIO.Add(io);
                 }
             }
-            foreach (var plc in machineList)
+            foreach (var plc in _runningPLCList)
             {
                 new Thread(async () =>
-               {
-                   var isOK = await plc.Start();
-                   if (!isOK)
-                   {
-                       foreach (var io in plc.ListIO)
-                       {
-                           io.Value = "Timeout";
-                           ShowNotification("Failed to start plc: " + plc.Address, "ERROR", 2000);
-                       }
-                   } else
-                   {
-                       ShowNotification("Success start plc: "+plc.Address, "INFO", 2000);
-                   }
-               }).Start();
+                {
+                    var isOK = await plc.Start();
+                    if (!isOK)
+                    {
+                        foreach (var io in plc.ListIO)
+                        {
+                            io.Value = "Timeout";
+                            ShowNotification("Failed to start plc: " + plc.Address, "ERROR", 2000);
+                        }
+                    }
+                    else
+                    {
+                        ShowNotification("Success start plc: " + plc.Address, "INFO", 2000);
+                    }
+                }).Start();
             }
-           
         }
-        private void subscribeDataFromPLC()
+
+        private void StopPLCWatcher()
         {
-            ApplicationService.Instance.EventAggregatorService.GetEvent<DataReadEvent>().Subscribe(handleDataFromEvent);
+            ShowNotification("Stopping all jobs.", "INFO", 20000);
+            btnStartPLCWatcher.Content = "Start";
+            _isWatcherStarted = false;
+            foreach (var plc in _runningPLCList)
+            {
+                try
+                {
+                    plc.Stop();
+                }
+                catch
+                {
+
+                }
+            }
+            _runningPLCList.Clear();
+            foreach (var io in PLCIOList)
+            {
+                io.Value = "N/A";
+            }
+
+            btnDeleteSelectedIO.IsEnabled = true;
+            btnShowAddIODialog.IsEnabled = true;
+            btnSaveIOConfig.IsEnabled = true;
+
+            ShowNotification("Stopped all jobs.", "INFO", 3000);
+            return;
         }
+
+
         private void handleDataFromEvent(PlcEventModel plcEventModel)
         {
             if (plcEventModel == null)
             {
                 return;
             }
-            var currentIO = ListIO.FirstOrDefault(io => io.Address.Equals(plcEventModel.Address));
+            var currentIO = PLCIOList.FirstOrDefault(io => io.Address.Equals(plcEventModel.Address));
             if (currentIO != null)
             {
                 currentIO.Value = plcEventModel.Data;
             }
-
         }
-          private void handleValueChangedEvent(ValueChangedModel valueChangedModel)
+
+        private void handleValueChangedEvent(ValueChangedModel valueChangedModel)
         {
             DateTime date = DateTime.Now;
-            Run run = new Run(date.ToString()+": Detect value changed in "+valueChangedModel.Address+" from "+valueChangedModel.OldValue+" to "+valueChangedModel.NewValue);
+            Run run = new Run(date.ToString() + ": Detect value changed in " + valueChangedModel.Address + " from " + valueChangedModel.OldValue + " to " + valueChangedModel.NewValue);
             Paragraph p = new Paragraph(run);
             Console.WriteLine(run.ToString());
 
             Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
             {
-                LogViewer.Blocks.Add(p);
+                //      LogViewer.Blocks.Add(p);
             }));
         }
 
-        private void AddIOButton_Click(object sender, RoutedEventArgs e)
+        private void BtnShowAddIODiaglog_Click(object sender, RoutedEventArgs e)
         {
-            AddIODialog();
-            if (AddIOView.Visibility== Visibility.Collapsed)
-            {
-
-                AddIOView.Visibility = Visibility.Visible;
-            } else
-            {
-                AddIOView.Visibility = Visibility.Collapsed;
-            }
+            InitAddIODialog();
         }
 
-        private void SaveIOButton_Click(object sender, RoutedEventArgs e)
+        private void BtnSaveIOConfig_Click(object sender, RoutedEventArgs e)
         {
-            File.WriteAllText("config.json", JsonConvert.SerializeObject(ListIO));
+            File.WriteAllText("config.json", JsonConvert.SerializeObject(PLCIOList));
             ShowNotification("Saved IOs configuration.", "INFO", 3000);
         }
-        private ObservableCollection<PlcIO> LoadSetup()
+
+        private ObservableCollection<PlcIO> LoadIOsConfigFromFile()
         {
             try
             {
-                var text = File.ReadAllText("config.json");
-                var config = JsonConvert.DeserializeObject<ObservableCollection<PlcIO>>(text);
-                foreach (var io in config )
+                var iosCongfigJson = File.ReadAllText("config.json");
+                var iosConfig = JsonConvert.DeserializeObject<ObservableCollection<PlcIO>>(iosCongfigJson);
+                foreach (var io in iosConfig )
                 {
-                    io.Value = "Not running";
+                    io.Value = "N/A";
                 }
-                return config;
+                return iosConfig;
             } catch
             {
                 return new ObservableCollection<PlcIO>();
             }
            
         }
-
-        private ObservableCollection<PLCModel> LoadSetupPLC()
+        private ObservableCollection<PLCModel> LoadPLCConfigFromFile()
         {
             try
             {
-                var text = File.ReadAllText("configPLC.json");
-                var config = JsonConvert.DeserializeObject<ObservableCollection<PLCModel>>(text);
+                var plcConfigJson = File.ReadAllText("configPLC.json");
+                var plcConfig = JsonConvert.DeserializeObject<ObservableCollection<PLCModel>>(plcConfigJson);
 
-                return config;
+                return plcConfig;
             }
             catch
             {
                 try
                 {
                     File.WriteAllText("configPLC.json", JsonConvert.SerializeObject(ControllerInfomationHolder.Instance.ListController));
-                    return LoadSetupPLC();
+                    return LoadPLCConfigFromFile();
                 } catch
                 {
                     return new ObservableCollection<PLCModel>();
@@ -230,133 +263,25 @@ namespace PLCDiagnostic
 
         }
 
-
-
-        private void DeletedIOButton_Click(object sender, RoutedEventArgs e)
+        private void BtnDeleteButtonClicked(object sender, RoutedEventArgs e)
         {
-
-            var listIO = ListIO.ToList();
-            listIO.RemoveAll(i => i.IsEnable == true);
-            ListIO = new ObservableCollection<PlcIO>( listIO);
-            dataGrid.ItemsSource = ListIO;
+            var toRemoveIOs = new List<PlcIO>();
+            foreach (var selectedItem in datagridIOs.SelectedItems)
+            {
+                toRemoveIOs.Add(selectedItem as PlcIO);
+            }
+            foreach (var selectedItem in toRemoveIOs)
+            {
+                PLCIOList.Remove(selectedItem as PlcIO);
+            }
             ShowNotification("Deleted selected IO.", "INFO", 3000);
 
         }
 
-        #region Add IO
-        public class TypeModel
-        {
-            public int Type { set; get; }
-            public string Name { set; get; }
-        }
-        public List<TypeModel> ListType;
-        public List<CpuTypeModel> ListCPUType;
-        public void AddIODialog()
-        {
-            ListType = new List<TypeModel>();
-            ListType.Add(new TypeModel()
-            {
-                Name = "Int",
-                Type = IOTypeConstants.INT_TYPE
-            });
-            ListType.Add(new TypeModel()
-            {
-                Name = "Boolean",
-                Type = IOTypeConstants.BOOL_TYPE
-            });
-            ListType.Add(new TypeModel()
-            {
-                Name = "Float",
-                Type = IOTypeConstants.FLOAT_TYPE
-            });
-            ListType.Add(new TypeModel()
-            {
-                Name = "Byte",
-                Type = IOTypeConstants.BYTE_TYPE
-            });
-            ListCPUType = new List<CpuTypeModel>();
-            ListCPUType.Add(new CpuTypeModel()
-            {
-                Type = S7.Net.CpuType.S71200
-            });
-            ListCPUType.Add(new CpuTypeModel()
-            {
-                Type = S7.Net.CpuType.S71500
-            });
-            ListCPUType.Add(new CpuTypeModel()
-            {
-                Type = S7.Net.CpuType.S7200
-            });
-            ListCPUType.Add(new CpuTypeModel()
-            {
-                Type = S7.Net.CpuType.S7300
-            });
-            ListCPUType.Add(new CpuTypeModel()
-            {
-                Type = S7.Net.CpuType.S7400
-            });
-            InitializeComponent();
-            cb_Type.ItemsSource = ListType;
-            cb_Type.SelectedIndex = 0;
-            cbCpuType.ItemsSource = ListPLC;
-            cbCpuType.SelectedIndex = 0;
-        }
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrEmpty(tb_Name.Text))
-            {
-                ShowNotification("Please input name of IO", "ERROR");
-                return;
-            }
-            if (string.IsNullOrEmpty(tb_Address.Text))
-            {
-                ShowNotification("Please input address of IO", "ERROR");
-                return;
-            }
-            if (cb_Type.SelectedItem == null)
-            {
-                ShowNotification("Please input address of IO", "ERROR");
-                return;
-            }
-            if (cbCpuType.SelectedItem==null)
-            {
-                ShowNotification("Please select a controller!", "ERROR");
-                return;
-            }
-            var selectController = cbCpuType.SelectedItem as PLCModel;
-            ToAddIO = new PlcIO()
-            {
-                Name = tb_Name.Text,
-                Value = "N/A",
-                Address = tb_Address.Text,
-                Type = (cb_Type.SelectedItem as TypeModel).Type,
-                Controller = selectController.Address,
-                CPUType = new CpuTypeModel()
-                {
-                    Type = selectController.CpuType
-                },
-                PlcId = selectController.Id
-            };
-            ListIO.Add(ToAddIO);
-            tb_Name.Text = "";
-            tb_Address.Text = "";
-            AddIOView.Visibility = Visibility.Collapsed;
-            ShowNotification("Added new IO!", "INFO", 3000);
-        }
-        public PlcIO ToAddIO { set; get; }
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            //to-do clear
-            AddIOView.Visibility = Visibility.Collapsed;
-        }
-
-
-        #endregion
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
+        private void BtnSavePLCConfig_Click(object sender, RoutedEventArgs e)
         {
             File.WriteAllText("configPLC.json", JsonConvert.SerializeObject(ListPLC));
-            foreach (var item in ListIO)
+            foreach (var item in PLCIOList)
             {
                 var plc = ListPLC.FirstOrDefault(i => i.Id == item.PlcId);
                 if (plc==null)
@@ -370,55 +295,170 @@ namespace PLCDiagnostic
                         Type = plc.CpuType
                     };
             }
-            File.WriteAllText("config.json", JsonConvert.SerializeObject(ListIO));
+            File.WriteAllText("config.json", JsonConvert.SerializeObject(PLCIOList));
             ShowNotification("Saved all configurations.", "INFO", 3000);
         }
 
-        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (AddIOView.Visibility == Visibility.Visible)
+            if (dialogViewAddIO.Visibility == Visibility.Visible)
             {
                 if (tabView.SelectedItem!= ioTab)
                 {
-                    AddIOView.Visibility = Visibility.Collapsed;
+                    dialogViewAddIO.Visibility = Visibility.Collapsed;
                 }
             }
         }
-        DispatcherTimer ShowNotificationTimer = null;
+
         public void ShowNotification(string content,string title, double milisecond= 3000)
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action( () =>
             {
-                if (ShowNotificationTimer != null)
+                if (_showNotificationTimer != null)
                 {
-                    ShowNotificationTimer.Stop();
-                    viewDialog.Visibility = Visibility.Collapsed;
+                    _showNotificationTimer.Stop();
+                    viewNotification.Visibility = Visibility.Collapsed;
                 }
-                ShowNotificationTimer = new DispatcherTimer();
-                ShowNotificationTimer.Interval = TimeSpan.FromMilliseconds(milisecond);
+                _showNotificationTimer = new DispatcherTimer();
+                _showNotificationTimer.Interval = TimeSpan.FromMilliseconds(milisecond);
                 tvDialogTile.Text = title;
                 tvDialogContent.Text = content;
-                viewDialog.Visibility = Visibility.Visible;
-                ShowNotificationTimer.Tick += (s, e) =>
+                viewNotification.Visibility = Visibility.Visible;
+                _showNotificationTimer.Tick += (s, e) =>
                 {
-                    ShowNotificationTimer.Stop();
-                    ShowNotificationTimer = null;
+                    _showNotificationTimer.Stop();
+                    _showNotificationTimer = null;
                     
-                    viewDialog.Visibility = Visibility.Collapsed;
+                    viewNotification.Visibility = Visibility.Collapsed;
 
                 };
-                ShowNotificationTimer.Start();
+                _showNotificationTimer.Start();
             }));
           
         }
-        private void Button_Click_3(object sender, RoutedEventArgs e)
+
+        private void BtnDismissNotificationClicked(object sender, RoutedEventArgs e)
         {
-            viewDialog.Visibility = Visibility.Collapsed;
+            viewNotification.Visibility = Visibility.Collapsed;
         }
 
-        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        private void BtnWriteIOValue_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            var clickedButton = sender as Button;
+            var selectedIO = clickedButton.DataContext as PlcIO;
+            if (selectedIO!=null)
+            {
+                var plc = _runningPLCList.FirstOrDefault(p => p.Address == selectedIO.Controller);
+                if (plc!=null)
+                {
+                    var isCompleted = plc.WriteIOToPLC(selectedIO);
+                    if (isCompleted)
+                    {
+                        ShowNotification("Write: " + selectedIO.WriteValue + " to " + selectedIO.WriteAddress, "INFO", 3000);
+                    } else
+                    {
+                        ShowNotification("Can't Write: " + selectedIO.WriteValue + " to " + selectedIO.WriteAddress, "INFO", 3000);
+                    }
+                }
+            }
         }
+
+
+        #region Add IO
+        public class TypeModel
+        {
+            public int Type { set; get; }
+            public string Name { set; get; }
+        }
+        public List<TypeModel> ListSupportValueType;
+
+        public void InitAddIODialog()
+        {
+            ListSupportValueType = new List<TypeModel>();
+            ListSupportValueType.Add(new TypeModel()
+            {
+                Name = "Int",
+                Type = IOTypeConstants.INT_TYPE
+            });
+            ListSupportValueType.Add(new TypeModel()
+            {
+                Name = "Boolean",
+                Type = IOTypeConstants.BOOL_TYPE
+            });
+            ListSupportValueType.Add(new TypeModel()
+            {
+                Name = "Float",
+                Type = IOTypeConstants.FLOAT_TYPE
+            });
+            ListSupportValueType.Add(new TypeModel()
+            {
+                Name = "Byte",
+                Type = IOTypeConstants.BYTE_TYPE
+            });
+            ListSupportValueType.Add(new TypeModel()
+            {
+                Name = "Word",
+                Type = IOTypeConstants.WORD_TYPE
+            });
+            comboboxValueType.ItemsSource = ListSupportValueType;
+            comboboxValueType.SelectedIndex = 0;
+            comboboxCPUType.ItemsSource = ListPLC;
+            comboboxCPUType.SelectedIndex = 0;
+
+            dialogViewAddIO.Visibility = Visibility.Visible;
+        }
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(tb_Name.Text))
+            {
+                ShowNotification("Please input name of IO", "ERROR");
+                return;
+            }
+            if (string.IsNullOrEmpty(tb_Address.Text))
+            {
+                ShowNotification("Please input address of IO", "ERROR");
+                return;
+            }
+            if (comboboxValueType.SelectedItem == null)
+            {
+                ShowNotification("Please input address of IO", "ERROR");
+                return;
+            }
+            if (comboboxCPUType.SelectedItem == null)
+            {
+                ShowNotification("Please select a controller!", "ERROR");
+                return;
+            }
+            var selectController = comboboxCPUType.SelectedItem as PLCModel;
+            var toAddIO = new PlcIO()
+            {
+                Name = tb_Name.Text,
+                Value = "N/A",
+                Address = tb_Address.Text,
+                Type = (comboboxValueType.SelectedItem as TypeModel).Type,
+                Controller = selectController.Address,
+                CPUType = new CpuTypeModel()
+                {
+                    Type = selectController.CpuType
+                },
+                PlcId = selectController.Id
+            };
+            PLCIOList.Add(toAddIO);
+            tb_Name.Text = "";
+            tb_Address.Text = "";
+            dialogViewAddIO.Visibility = Visibility.Collapsed;
+            ShowNotification("Added new IO!", "INFO", 3000);
+        }
+
+        private void btnCancelAddIO_Click(object sender, RoutedEventArgs e)
+        {
+            //to-do clear
+            dialogViewAddIO.Visibility = Visibility.Collapsed;
+        }
+
+
+        #endregion
+
+      
     }
 }

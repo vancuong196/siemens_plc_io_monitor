@@ -13,6 +13,8 @@ namespace PLCDiagnostic.Models
     public class PlcIO : BindableBase
     {
         private string _value;
+        private string _writeAddress;
+        private string _writeValue;
         private string _addressController = "127.0.0.1";
         private CpuTypeModel cpuTypeModel = new CpuTypeModel()
         {
@@ -52,6 +54,32 @@ namespace PLCDiagnostic.Models
                 return _value;
             }
         }
+        public string WriteAddress {
+            set
+            {
+                SetProperty(ref _writeAddress, value);
+            }
+            get
+            {
+                if (string.IsNullOrEmpty(_writeAddress))
+                {
+                    return Address;
+                }
+                return _writeAddress;
+            }
+        }
+        public string WriteValue
+        {
+            set
+            {
+                SetProperty(ref _writeValue, value);
+            }
+            get
+            {
+               
+                return _writeValue;
+            }
+        }
         public string ValueToDisplay
         {
             get
@@ -74,9 +102,13 @@ namespace PLCDiagnostic.Models
                 } else if (Type == IOTypeConstants.INT_TYPE)
                 {
                     return "Int";
-                } else
+                } else if (Type == IOTypeConstants.BYTE_TYPE)
                 {
                     return "Byte";
+                }
+                else
+                {
+                    return "Word";
                 }
             }
             set
@@ -92,10 +124,13 @@ namespace PLCDiagnostic.Models
                 if ("Int" == value)
                 {
                     Type = IOTypeConstants.INT_TYPE;
-                } else
+                } else if ("Byte" == value)
                 
                 {
                     Type = IOTypeConstants.BYTE_TYPE;
+                } else
+                {
+                    Type = IOTypeConstants.WORD_TYPE;
                 }
                
             }
